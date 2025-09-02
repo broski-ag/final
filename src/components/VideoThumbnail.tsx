@@ -10,6 +10,7 @@ interface VideoThumbnailProps {
   aspectRatio?: "video" | "vertical";
   className?: string;
   isShowreel?: boolean;
+  thumbnailIndex?: number; // New prop for thumbnail index
 }
 
 export function VideoThumbnail({
@@ -18,6 +19,7 @@ export function VideoThumbnail({
   aspectRatio = "video",
   className = "",
   isShowreel = false,
+  thumbnailIndex,
 }: VideoThumbnailProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,8 +29,17 @@ export function VideoThumbnail({
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
+  const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
 
   const aspectClasses = aspectRatio === "vertical" ? "aspect-[9/16]" : "aspect-video";
+
+  // Get thumbnail path
+  const getThumbnailPath = () => {
+    if (thumbnailIndex) {
+      return `/thumbnails/${thumbnailIndex}.jpg`;
+    }
+    return null;
+  };
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -53,18 +64,23 @@ export function VideoThumbnail({
     return () => observer.disconnect();
   }, []);
 
-  // Load video when in view but don't autoplay
-  useEffect(() => {
-    if (isInView && videoRef.current && !videoLoaded) {
+  // Load video only when user clicks to play
+  const loadVideo = () => {
+    if (videoRef.current && !videoLoaded) {
       const video = videoRef.current;
       video.src = src;
       video.load();
     }
-  }, [isInView, src, videoLoaded]);
+  };
 
   const handleClick = async () => {
     if (!videoRef.current) return;
     setHasInteracted(true);
+
+    // Load video if not already loaded
+    if (!videoLoaded) {
+      loadVideo();
+    }
 
     if (isPlaying) {
       videoRef.current.pause();
@@ -105,6 +121,8 @@ export function VideoThumbnail({
     ? (isFullscreen ? 'w-20 h-20' : 'w-12 h-12')
     : (isFullscreen ? 'w-24 h-24' : 'w-16 h-16');
 
+  const thumbnailPath = getThumbnailPath();
+
   return (
     <div
       ref={containerRef}
@@ -115,22 +133,38 @@ export function VideoThumbnail({
       } ${className}`}
       onClick={handleClick}
     >
-      {/* Single video element that handles both preview and playback */}
-      {isInView && (
+      {/* Static thumbnail image */}
+      {thumbnailPath && isInView && (
+        <img
+          src={thumbnailPath}
+          alt={`${title} thumbnail`}
+          className={`absolute inset-0 w-full h-full ${
+            isFullscreen ? 'object-contain' : 'object-cover'
+          } transition-opacity duration-300 ${
+            isPlaying && videoLoaded ? 'opacity-0' : 'opacity-100'
+          }`}
+          onLoad={() => setThumbnailLoaded(true)}
+          onError={() => {
+            console.warn(`Thumbnail not found: ${thumbnailPath}`);
+            setThumbnailLoaded(false);
+          }}
+        />
+      )}
+
+      {/* Video element (only loads when user clicks play) */}
+      {hasInteracted && (
         <video 
           ref={videoRef}
           className={`absolute inset-0 w-full h-full ${
             isFullscreen ? 'object-contain' : 'object-cover'
-          } transition-opacity duration-300 ${videoLoaded ? 'opacity-100' : 'opacity-0'}`}
+          } transition-opacity duration-300 ${
+            videoLoaded && isPlaying ? 'opacity-100' : 'opacity-0'
+          }`}
           loop={isShowreel}
           playsInline
-          preload="metadata" // Only load metadata for thumbnail
+          preload="none" // Don't preload anything
           onLoadedData={() => {
             setVideoLoaded(true);
-            // Seek to 1 second for better thumbnail
-            if (videoRef.current && !hasInteracted) { 
-              videoRef.current.currentTime = 0;
-            }
           }}
           onPlay={() => {
             setIsPlaying(true);
@@ -147,8 +181,8 @@ export function VideoThumbnail({
         />
       )}
 
-      {/* Fallback background when video is loading */}
-      {!videoLoaded && (
+      {/* Fallback background when thumbnail is loading or not available */}
+      {(!thumbnailLoaded && !thumbnailPath) && (
         <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
           <div className="text-white/40 text-center">
             <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto mb-2" />

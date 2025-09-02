@@ -505,6 +505,7 @@ gsap.to(backgroundTextRef.current, {
                 src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
                 title="SHOW REEL"
                 isShowreel={true}
+                thumbnailIndex={1}
               />
             </div>
           </div>
@@ -531,6 +532,7 @@ gsap.to(backgroundTextRef.current, {
         src={url}
         title={`PROJECT ${String(i + 1).padStart(2, "0")}`}
         isShowreel={false}
+        thumbnailIndex={i + 2} // Start from 2 since showreel uses 1
       />
     ))}
   </div>
@@ -561,6 +563,7 @@ gsap.to(backgroundTextRef.current, {
         src={url}
         title={`SOCIAL ${String(i + 1).padStart(2, "0")}`}
         aspectRatio="vertical"
+        thumbnailIndex={i + 11} // Start from 11 (after the 9 featured work videos + showreel)
       />
     ))}
   </div> 
