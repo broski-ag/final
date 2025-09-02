@@ -70,21 +70,39 @@ export function VideoThumbnail({
       videoRef.current.pause();
       setIsPlaying(false);
     } else {
-      // Load video if not already loaded
-      if (!videoLoaded) {
-        setIsLoading(true);
-        videoRef.current.src = src;
-        videoRef.current.load();
-      }
+      setIsLoading(true);
+      
+      // Always set the source and load
+      videoRef.current.src = src;
+      videoRef.current.load();
       
       try {
-        setIsLoading(true);
+        // Wait for the video to be ready to play
+        await new Promise((resolve, reject) => {
+          const onCanPlay = () => {
+            videoRef.current?.removeEventListener('canplay', onCanPlay);
+            videoRef.current?.removeEventListener('error', onError);
+            resolve(void 0);
+          };
+          
+          const onError = () => {
+            videoRef.current?.removeEventListener('canplay', onCanPlay);
+            videoRef.current?.removeEventListener('error', onError);
+            reject(new Error('Video failed to load'));
+          };
+          
+          videoRef.current?.addEventListener('canplay', onCanPlay);
+          videoRef.current?.addEventListener('error', onError);
+        });
+        
         await videoRef.current.play();
         setIsPlaying(true);
+        setVideoLoaded(true);
         setIsLoading(false);
       } catch (error) {
         console.error('Error playing video:', error);
         setIsLoading(false);
+        setIsPlaying(false);
       }
     }
   };
@@ -156,19 +174,26 @@ export function VideoThumbnail({
           muted
           preload="none"
           onLoadedData={() => {
-            setVideoLoaded(true);
-            setIsLoading(false);
+            console.log('Video loaded data');
           }}
           onPlay={() => {
+            console.log('Video started playing');
             setIsPlaying(true);
             setIsLoading(false);
+            setVideoLoaded(true);
           }}
           onPause={() => setIsPlaying(false)}
           onEnded={() => setIsPlaying(false)}
-          onLoadStart={() => setIsLoading(true)}
-          onCanPlay={() => setIsLoading(false)}
+          onLoadStart={() => {
+            console.log('Video load started');
+          }}
+          onCanPlay={() => {
+            console.log('Video can play');
+          }}
           onError={() => {
+            console.log('Video error occurred');
             setIsLoading(false);
+            setIsPlaying(false);
             console.error('Video failed to load:', src);
           }}
         />
@@ -186,11 +211,11 @@ export function VideoThumbnail({
 
       {/* Play/Pause button overlay */}
       <div className="absolute inset-0 flex items-center justify-center z-10">
-        <div className={`bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-300 ${playButtonSize} ${
+        <div className={`bg-white/40 rounded-full flex items-center justify-center backdrop-blur-sm transition-all duration-300 ${playButtonSize} ${
           isLoading ? 'animate-pulse' : (isMobile() ? '' : 'group-hover:bg-white/30')
         } ${isPlaying && !isLoading ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
           {isLoading ? (
-            <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-white/40 border-t-white rounded-full animate-spin" />
           ) : isPlaying ? (
             <Pause className={`text-white ${
               aspectRatio === 'vertical' 
