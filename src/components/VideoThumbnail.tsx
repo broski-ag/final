@@ -203,7 +203,7 @@ export function VideoThumbnail({
       {(!thumbnailLoaded && !thumbnailPath) && (
         <div className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
           <div className="text-white/40 text-center">
-            <div className="w-8 h-8 border-2 border-white/20 border-t-white/60 rounded-full animate-spin mx-auto mb-2" />
+            <div className="w-8 h-8 border-2 border-white/20 border-t-white/30 rounded-full animate-spin mx-auto mb-2" />
             <p className="text-xs font-bosenAlt">LOADING</p>
           </div>
         </div>
