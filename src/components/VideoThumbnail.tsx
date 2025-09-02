@@ -150,7 +150,7 @@ export function VideoThumbnail({
           className={`absolute inset-0 w-full h-full ${
             isFullscreen ? 'object-contain' : 'object-cover'
           } transition-opacity duration-300 ${
-            isPlaying && videoLoaded ? 'opacity-0' : 'opacity-100'
+            videoLoaded ? 'opacity-0' : 'opacity-100'
           }`}
           onLoad={() => setThumbnailLoaded(true)}
           onError={() => {
