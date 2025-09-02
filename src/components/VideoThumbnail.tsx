@@ -10,7 +10,7 @@ interface VideoThumbnailProps {
   aspectRatio?: "video" | "vertical";
   className?: string;
   isShowreel?: boolean;
-  thumbnailIndex?: number; // New prop for thumbnail index
+  thumbnailIndex?: number;
 }
 
 export function VideoThumbnail({
@@ -28,7 +28,6 @@ export function VideoThumbnail({
   const [isInView, setIsInView] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
 
   const aspectClasses = aspectRatio === "vertical" ? "aspect-[9/16]" : "aspect-video";
@@ -64,31 +63,22 @@ export function VideoThumbnail({
     return () => observer.disconnect();
   }, []);
 
-  // Load video only when user clicks to play
-  const loadVideo = () => {
-    if (videoRef.current && !videoLoaded) {
-      const video = videoRef.current;
-      video.src = src;
-      video.load();
-    }
-  };
-
   const handleClick = async () => {
     if (!videoRef.current) return;
-    setHasInteracted(true);
-
-    // Load video if not already loaded
-    if (!videoLoaded) {
-      loadVideo();
-    }
 
     if (isPlaying) {
       videoRef.current.pause();
       setIsPlaying(false);
     } else {
-      setIsLoading(true);
+      // Load video if not already loaded
+      if (!videoLoaded) {
+        setIsLoading(true);
+        videoRef.current.src = src;
+        videoRef.current.load();
+      }
       
       try {
+        setIsLoading(true);
         await videoRef.current.play();
         setIsPlaying(true);
         setIsLoading(false);
@@ -99,7 +89,8 @@ export function VideoThumbnail({
     }
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isFullscreen) {
       containerRef.current?.requestFullscreen?.();
     } else {
@@ -151,8 +142,8 @@ export function VideoThumbnail({
         />
       )}
 
-      {/* Video element (only loads when user clicks play) */}
-      {hasInteracted && (
+      {/* Video element */}
+      {isInView && (
         <video 
           ref={videoRef}
           className={`absolute inset-0 w-full h-full ${
@@ -162,9 +153,11 @@ export function VideoThumbnail({
           }`}
           loop={isShowreel}
           playsInline
-          preload="none" // Don't preload anything
+          muted
+          preload="none"
           onLoadedData={() => {
             setVideoLoaded(true);
+            setIsLoading(false);
           }}
           onPlay={() => {
             setIsPlaying(true);
@@ -221,10 +214,7 @@ export function VideoThumbnail({
       
       {/* Fullscreen button */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleFullscreen();
-        }}
+        onClick={toggleFullscreen}
         className={`absolute bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center transition-all duration-300 z-20 ${
           isFullscreen 
             ? 'top-8 right-8 w-12 h-12 opacity-100' 
